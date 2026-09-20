@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 328 328" width="328" height="328">
+<defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5f5e5a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<mask id="g" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="328" height="328" fill="white"/>
+<rect x="156" y="153" width="16" height="22" fill="black" rx="2"/>
+<rect x="156" y="89" width="16" height="22" fill="black" rx="2"/>
+<rect x="220" y="89" width="16" height="22" fill="black" rx="2"/>
+<rect x="220" y="153" width="16" height="22" fill="black" rx="2"/>
+<rect x="220" y="217" width="16" height="22" fill="black" rx="2"/>
+<rect x="156" y="217" width="16" height="22" fill="black" rx="2"/>
+<rect x="92" y="217" width="16" height="22" fill="black" rx="2"/>
+<rect x="92" y="153" width="16" height="22" fill="black" rx="2"/>
+<rect x="92" y="89" width="16" height="22" fill="black" rx="2"/>
+<rect x="156" y="25" width="16" height="22" fill="black" rx="2"/>
+<rect x="216" y="25" width="24" height="22" fill="black" rx="2"/>
+<rect x="280" y="25" width="24" height="22" fill="black" rx="2"/>
+<rect x="280" y="89" width="24" height="22" fill="black" rx="2"/>
+<rect x="280" y="153" width="24" height="22" fill="black" rx="2"/>
+<rect x="280" y="217" width="24" height="22" fill="black" rx="2"/>
+<rect x="280" y="281" width="24" height="22" fill="black" rx="2"/>
+<rect x="216" y="281" width="24" height="22" fill="black" rx="2"/>
+<rect x="152" y="281" width="24" height="22" fill="black" rx="2"/>
+<rect x="88" y="281" width="24" height="22" fill="black" rx="2"/>
+<rect x="24" y="281" width="24" height="22" fill="black" rx="2"/>
+<rect x="24" y="217" width="24" height="22" fill="black" rx="2"/>
+<rect x="24" y="153" width="24" height="22" fill="black" rx="2"/>
+<rect x="24" y="89" width="24" height="22" fill="black" rx="2"/>
+<rect x="24" y="25" width="24" height="22" fill="black" rx="2"/>
+<rect x="88" y="25" width="24" height="22" fill="black" rx="2"/>
+</mask></defs>
+<rect x="132" y="132" width="64" height="64" rx="4" fill="#f1efe8" stroke="#5f5e5a" stroke-width="0.5"/>
+<rect x="132" y="68" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="196" y="68" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="196" y="132" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="196" y="196" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="132" y="196" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="68" y="196" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="68" y="132" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="68" y="68" width="64" height="64" rx="4" fill="#e1f5ee" stroke="#0f6e56" stroke-width="0.5"/>
+<rect x="132" y="4" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="196" y="4" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="260" y="4" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="260" y="68" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="260" y="132" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="260" y="196" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="260" y="260" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="196" y="260" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="132" y="260" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="68" y="260" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="4" y="260" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="4" y="196" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="4" y="132" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="4" y="68" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="4" y="4" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<rect x="68" y="4" width="64" height="64" rx="4" fill="#eeedfe" stroke="#534ab7" stroke-width="0.5"/>
+<polyline fill="none" stroke="#5f5e5a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" marker-end="url(#a)" mask="url(#g)" points="164,164 164,100 228,100 228,164 228,228 164,228 100,228 100,164 100,100 164,36 228,36 292,36 292,100 292,164 292,228 292,292 228,292 164,292 100,292 36,292 36,228 36,164 36,100 36,36 100,36"/>
+<text x="164" y="164" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">0</text>
+<text x="164" y="100" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">1</text>
+<text x="228" y="100" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">2</text>
+<text x="228" y="164" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">3</text>
+<text x="228" y="228" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">4</text>
+<text x="164" y="228" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">5</text>
+<text x="100" y="228" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">6</text>
+<text x="100" y="164" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">7</text>
+<text x="100" y="100" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">8</text>
+<text x="164" y="36" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">9</text>
+<text x="228" y="36" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">10</text>
+<text x="292" y="36" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">11</text>
+<text x="292" y="100" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">12</text>
+<text x="292" y="164" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">13</text>
+<text x="292" y="228" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">14</text>
+<text x="292" y="292" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">15</text>
+<text x="228" y="292" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">16</text>
+<text x="164" y="292" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">17</text>
+<text x="100" y="292" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">18</text>
+<text x="36" y="292" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">19</text>
+<text x="36" y="228" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">20</text>
+<text x="36" y="164" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">21</text>
+<text x="36" y="100" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">22</text>
+<text x="36" y="36" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">23</text>
+<text x="100" y="36" text-anchor="middle" dominant-baseline="central" font-family="-apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif" font-size="14" font-weight="500" fill="#0b0b0b">24</text>
+</svg>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parsing Bolo replays, after all this time</title>
+<meta name="description" content="How a 1990s Macintosh tank game's encrypted replay logs were turned into a working replay viewer, with a lot of help from an AI.">
+<script>
+	try {
+		let t = localStorage.getItem("theme");
+		if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+	} catch (e) {}
+</script>
+<style>
+	@font-face {
+		font-family: "Source Serif 4";
+		font-style: normal;
+		font-weight: 400;
+		font-display: swap;
+		src: url(fonts/source-serif-4-latin-400-normal.woff2) format("woff2");
+	}
+	@font-face {
+		font-family: "Source Serif 4";
+		font-style: normal;
+		font-weight: 600;
+		font-display: swap;
+		src: url(fonts/source-serif-4-latin-600-normal.woff2) format("woff2");
+	}
+	@font-face {
+		font-family: "Source Serif 4";
+		font-style: italic;
+		font-weight: 400;
+		font-display: swap;
+		src: url(fonts/source-serif-4-latin-400-italic.woff2) format("woff2");
+	}
+	:root {
+		color-scheme: light dark;
+		--bg: #f4f1e8;
+		--bg-panel: #eae6d9;
+		--ink: #1c211c;
+		--ink-soft: #414741;
+		--muted: #6b716a;
+		--rule: #d5cfbf;
+		--forest: #0e3c1c;
+		--forest-soft: #2c6b3a;
+		--gold: #b78a12;
+		--gold-soft: #f0b429;
+		--link: #1f5f34;
+		--link-hover: #0e3c1c;
+		--chat-time: #7b8079;
+		--fig-bg: #ece9df;
+		--fig-line: #5f5e5a;
+		--fig-n0: #f1efe8; --fig-n0-s: #5f5e5a;
+		--fig-n1: #e1f5ee; --fig-n1-s: #0f6e56;
+		--fig-n2: #eeedfe; --fig-n2-s: #534ab7;
+		--if-light: block; --if-dark: none;
+		--serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+		--sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+		--mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme="light"]) {
+			--bg: #0f1512;
+			--bg-panel: #161e19;
+			--ink: #e6e4dc;
+			--ink-soft: #c9c8bf;
+			--muted: #9aa097;
+			--rule: #29332c;
+			--forest: #8fd6a4;
+			--forest-soft: #5fb37a;
+			--gold: #f0b429;
+			--gold-soft: #f0b429;
+			--link: #8fd6a4;
+			--link-hover: #c4f0d0;
+			--chat-time: #7f877e;
+			--fig-bg: #161e19;
+			--fig-line: #a3a89f;
+			--fig-n0: #2a2c27; --fig-n0-s: #8d8b83;
+			--fig-n1: #14352a; --fig-n1-s: #5fb37a;
+			--fig-n2: #23244a; --fig-n2-s: #9b93e6;
+			--if-light: none; --if-dark: block;
+		}
+	}
+	:root[data-theme="dark"] {
+		--bg: #0f1512;
+		--bg-panel: #161e19;
+		--ink: #e6e4dc;
+		--ink-soft: #c9c8bf;
+		--muted: #9aa097;
+		--rule: #29332c;
+		--forest: #8fd6a4;
+		--forest-soft: #5fb37a;
+		--gold: #f0b429;
+		--gold-soft: #f0b429;
+		--link: #8fd6a4;
+		--link-hover: #c4f0d0;
+		--chat-time: #7f877e;
+		--fig-bg: #161e19;
+		--fig-line: #a3a89f;
+		--fig-n0: #2a2c27; --fig-n0-s: #8d8b83;
+		--fig-n1: #14352a; --fig-n1-s: #5fb37a;
+		--fig-n2: #23244a; --fig-n2-s: #9b93e6;
+		--if-light: none; --if-dark: block;
+	}
+
+	* { box-sizing: border-box; }
+	html { -webkit-text-size-adjust: 100%; }
+	body {
+		margin: 0;
+		background: var(--bg);
+		color: var(--ink);
+		font-family: var(--serif);
+		font-size: 1.25rem;
+		line-height: 1.55;
+		padding: 0 16px;
+	}
+
+	/* One reading column, with figures allowed to break out wider. */
+	main {
+		display: grid;
+		grid-template-columns: 1fr min(966px, 100%) 1fr;
+		padding-bottom: 5rem;
+	}
+	main > * { grid-column: 2; min-width: 0; }
+	main > .wide {
+		grid-column: 1 / -1;
+		justify-self: center;
+		width: min(966px, 100%);
+	}
+
+	header.title {
+		grid-column: 1 / -1;
+		justify-self: center;
+		width: min(966px, 100%);
+		padding: 4rem 0 2.5rem;
+		text-align: center;
+	}
+	header.title h1 {
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: clamp(2rem, 5vw, 3rem);
+		line-height: 1.1;
+		letter-spacing: -0.01em;
+		color: var(--forest);
+		margin: 0 0 1rem;
+	}
+	header.title .rule {
+		display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+		color: var(--gold); font-family: var(--sans); font-size: 0.8rem;
+		letter-spacing: 0.14em; text-transform: uppercase; text-align: center;
+	}
+	header.title .rule::before, header.title .rule::after {
+		content: ""; height: 1px; width: 4rem; background: var(--rule); flex: none;
+	}
+	@media (max-width: 560px) {
+		header.title .rule::before, header.title .rule::after { display: none; }
+	}
+
+	h2 {
+		font-family: var(--serif);
+		font-weight: 600;
+		font-size: 1.9rem;
+		line-height: 1.2;
+		color: var(--forest);
+		margin: 3rem 0 0.75rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--rule);
+	}
+	p { margin: 0 0 1.2rem; }
+	a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+	a:hover { color: var(--link-hover); }
+	em { font-style: italic; }
+	ul { padding-left: 1.4rem; margin: 0 0 1.2rem; }
+	li { margin: 0.25rem 0; }
+
+	blockquote {
+		margin: 1.5rem 0;
+		padding: 1rem 1.25rem;
+		background: var(--bg-panel);
+		border-left: 3px solid var(--gold-soft);
+		border-radius: 0 6px 6px 0;
+		line-height: 1.55;
+		color: var(--ink-soft);
+	}
+	blockquote p { margin: 0; }
+
+	figure {
+		margin: 1.75rem 0 2rem;
+		text-align: center;
+	}
+	figure img, figure svg {
+		max-width: 100%;
+		height: auto;
+		border-radius: 6px;
+	}
+	figcaption {
+		font-family: var(--sans);
+		font-size: 0.85rem;
+		line-height: 1.45;
+		color: var(--muted);
+		margin: 0.6rem auto 0;
+		max-width: 44rem;
+	}
+	figure.pair .grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	@media (max-width: 560px) {
+		figure.pair .grid { grid-template-columns: 1fr; }
+	}
+
+	.chat {
+		margin: 1.5rem 0 2rem;
+		background: var(--bg-panel);
+		border: 1px solid var(--rule);
+		border-radius: 8px;
+		padding: 1rem 1.1rem;
+		font-family: var(--mono);
+		font-size: 1.1rem;
+		line-height: 1.5;
+		overflow-x: auto;
+	}
+	.chat .line { display: grid; grid-template-columns: 4.2em 6.5em 1fr; gap: 0.75em; align-items: start; }
+	.chat .m { white-space: pre-wrap; overflow-wrap: anywhere; }
+	.chat .t { color: var(--chat-time); text-align: right; white-space: nowrap; }
+	@media (max-width: 560px) {
+		.chat { padding: 0.8rem 0.7rem; font-size: 0.85rem; }
+		.chat .line { grid-template-columns: 3.9em 5.4em 1fr; gap: 0.55em; }
+	}
+	.chat .n { font-weight: 600; }
+	.chat .n.p0 { color: var(--forest-soft); }
+	.chat .n.p1 { color: var(--gold); }
+	.chat .n.p2 { color: #b34a2e; }
+	.chat .n.p3 { color: #3f6fb3; }
+	:root[data-theme="dark"] .chat .n.p2, :root[data-theme="dark"] .chat .n.p3 { filter: brightness(1.5); }
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme="light"]) .chat .n.p2,
+		:root:not([data-theme="light"]) .chat .n.p3 { filter: brightness(1.5); }
+	}
+
+	.stats {
+		list-style: none;
+		padding: 0;
+		margin: 1.25rem 0 1.5rem;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
+	}
+	.stats li {
+		background: var(--bg-panel);
+		border: 1px solid var(--rule);
+		border-radius: 8px;
+		padding: 0.9rem 1rem;
+		margin: 0;
+		font-family: var(--sans);
+		line-height: 1.3;
+	}
+	.stats .num {
+		display: block;
+		font-family: var(--serif);
+		font-size: 1.7rem;
+		font-weight: 600;
+		color: var(--forest);
+	}
+	.stats .lab { display: block; font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; }
+	@media (max-width: 560px) {
+		.stats { grid-template-columns: 1fr; }
+	}
+
+	.theme-toggle {
+		position: fixed;
+		top: 14px;
+		right: 14px;
+		z-index: 10;
+		appearance: none;
+		border: 1px solid var(--rule);
+		background: var(--bg-panel);
+		color: var(--ink-soft);
+		font-family: var(--sans);
+		font-size: 0.8rem;
+		line-height: 1;
+		padding: 0.5rem 0.75rem;
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.theme-toggle:hover { color: var(--forest); border-color: var(--forest-soft); }
+	.theme-toggle:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+	.theme-toggle .glyph { font-size: 1rem; line-height: 1; }
+
+	/* Inline diagrams take their colours from the theme. */
+	.fig-bg { fill: var(--fig-bg); }
+	.fig-line { stroke: var(--fig-line); }
+	.fig-text { fill: var(--ink); font-family: var(--sans); }
+	.fig-muted { fill: var(--muted); font-family: var(--sans); }
+	.fig-n0 { fill: var(--fig-n0); stroke: var(--fig-n0-s); }
+	.fig-n1 { fill: var(--fig-n1); stroke: var(--fig-n1-s); }
+	.fig-n2 { fill: var(--fig-n2); stroke: var(--fig-n2-s); }
+	figure svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+	.only-light { display: var(--if-light); margin: 0 auto; }
+	.only-dark { display: var(--if-dark); margin: 0 auto; }
+
+	footer {
+		grid-column: 1 / -1;
+		justify-self: center;
+		width: min(966px, 100%);
+		margin-top: 3rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--rule);
+		color: var(--ink-soft);
+	}
+	footer p { margin: 0 0 0.8rem; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark mode"><span class="glyph" aria-hidden="true"></span><span class="label"></span></button>
+<main>
+
+<header class="title">
+	<h1>Parsing Bolo replays, after all this time</h1>
+	<div class="rule">Essay text by the human author. Layout / images / captions by Claude.</div>
+</header>
+
+<h2>Bolo and BoloViewer</h2>
+
+<p>Long ago, in an age before time itself existed (the 1980s and 90s), there was a man, <a href="https://en.wikipedia.org/wiki/Stuart_Cheshire">Stuart Cheshire</a>, who created the greatest video game of all time. He went on to do other good and important things, but this essay is not about him. Nor is it really about the game he created, <a href="https://en.wikipedia.org/wiki/Bolo_(1987_video_game)">Bolo</a>, a game featuring player-controlled tanks and automated <a href="https://en.wikipedia.org/wiki/Pillbox_(military)">pillboxes</a> shooting at each other.</p>
+
+<figure class="wide">
+	<img src="bolo_screenshot.png" width="1032" height="648" alt="Bolo, in its Windows port: a tank in a forest map, pillboxes, a base, a status panel of shells, mines and armour, and a message line reporting that Hopper just stole a pillbox from rooklift.">
+	<figcaption>Bolo (strictly speaking, its Windows port). Two tanks, two pillboxes, some forest, and some bad news on the wire.</figcaption>
+</figure>
+
+<p>Rather, this is an essay about Bolo <em>replays</em>, which Bolo could log to disk, for which there was never an official viewer. In fact, Bolo even encrypts the logs with a simple cipher.</p>
+
+<p>Eventually (around 2000) there came an unofficial viewer called BoloViewer, written by Carl Osterwald, who cracked the encryption and worked out all of the format details. While this functioned well, it was a Mac-only program and also it's hard to get a copy these days. So when the Bolo community suggested a <a href="https://rooklift.github.io/ancient_bolo_parser">new replay viewer</a> be created, I did the only sane thing and turned to Claude (and to a lesser extent, Sol).</p>
+
+<p>Thankfully, enough documentation about Bolo survived (thanks to Carl, Rob Keogh, and John Morrison!) to enable parsing of the replays. The battle was everything else.</p>
+
+<h2>Bolo's network architecture</h2>
+
+<p>While a typical multiplayer game might use a server/client hub-and-spoke network structure, Bolo did not. Bolo used a ring topology, with updates travelling one-way around the ring.</p>
+
+<figure class="pair">
+	<div class="grid">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img" aria-labelledby="fht"><title id="fht">Hub and spoke network</title><defs><marker id="fha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" class="fig-line" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect width="340" height="300" rx="6" class="fig-bg"/><line x1="170.0" y1="110.0" x2="170.0" y2="70.0" class="fig-line" stroke-width="1.5" opacity="0.7" marker-start="url(#fha)" marker-end="url(#fha)"/><line x1="198.5" y1="130.7" x2="236.6" y2="118.4" class="fig-line" stroke-width="1.5" opacity="0.7" marker-start="url(#fha)" marker-end="url(#fha)"/><line x1="187.6" y1="164.3" x2="211.1" y2="196.6" class="fig-line" stroke-width="1.5" opacity="0.7" marker-start="url(#fha)" marker-end="url(#fha)"/><line x1="152.4" y1="164.3" x2="128.9" y2="196.6" class="fig-line" stroke-width="1.5" opacity="0.7" marker-start="url(#fha)" marker-end="url(#fha)"/><line x1="141.5" y1="130.7" x2="103.4" y2="118.4" class="fig-line" stroke-width="1.5" opacity="0.7" marker-start="url(#fha)" marker-end="url(#fha)"/><circle cx="170.0" cy="45.0" r="22" class="fig-n1" stroke-width="1.5"/><text x="170.0" y="45.0" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 1</text><circle cx="260.4" cy="110.6" r="22" class="fig-n1" stroke-width="1.5"/><text x="260.4" y="110.6" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 2</text><circle cx="225.8" cy="216.9" r="22" class="fig-n1" stroke-width="1.5"/><text x="225.8" y="216.9" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 3</text><circle cx="114.2" cy="216.9" r="22" class="fig-n1" stroke-width="1.5"/><text x="114.2" y="216.9" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 4</text><circle cx="79.6" cy="110.6" r="22" class="fig-n1" stroke-width="1.5"/><text x="79.6" y="110.6" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 5</text><circle cx="170.0" cy="140.0" r="28" class="fig-n2" stroke-width="1.5"/><text x="170.0" y="140.0" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">server</text><text x="170" y="278" text-anchor="middle" class="fig-muted" font-size="12">hub and spoke: the server sees everything</text></svg>
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" role="img" aria-labelledby="frt"><title id="frt">Ring network</title><defs><marker id="fra" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" class="fig-line" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect width="340" height="300" rx="6" class="fig-bg"/><path d="M191.0 60.3 A95 95 0 0 1 239.3 95.4" fill="none" class="fig-line" stroke-width="1.5" opacity="0.7" marker-end="url(#fra)"/><path d="M252.3 135.4 A95 95 0 0 1 233.9 192.1" fill="none" class="fig-line" stroke-width="1.5" opacity="0.7" marker-end="url(#fra)"/><path d="M199.8 216.9 A95 95 0 0 1 140.2 216.9" fill="none" class="fig-line" stroke-width="1.5" opacity="0.7" marker-end="url(#fra)"/><path d="M106.1 192.1 A95 95 0 0 1 87.7 135.4" fill="none" class="fig-line" stroke-width="1.5" opacity="0.7" marker-end="url(#fra)"/><path d="M100.7 95.4 A95 95 0 0 1 149.0 60.3" fill="none" class="fig-line" stroke-width="1.5" opacity="0.7" marker-end="url(#fra)"/><circle cx="170.0" cy="45.0" r="22" class="fig-n1" stroke-width="1.5"/><text x="170.0" y="45.0" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 1</text><circle cx="260.4" cy="110.6" r="22" class="fig-n1" stroke-width="1.5"/><text x="260.4" y="110.6" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 2</text><circle cx="225.8" cy="216.9" r="22" class="fig-n1" stroke-width="1.5"/><text x="225.8" y="216.9" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 3</text><circle cx="114.2" cy="216.9" r="22" class="fig-n1" stroke-width="1.5"/><text x="114.2" y="216.9" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 4</text><circle cx="79.6" cy="110.6" r="22" class="fig-n1" stroke-width="1.5"/><text x="79.6" y="110.6" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="13" font-weight="500">tank 5</text><text x="170" y="140" text-anchor="middle" dominant-baseline="central" class="fig-muted" font-size="12">no server</text><text x="170" y="278" text-anchor="middle" class="fig-muted" font-size="12">ring: each tank only hears from the one before it</text></svg>
+	</div>
+</figure>
+
+<p>With a traditional server, the replay would be created by the server and would be a perfectly authoritative account of what happened. But for Bolo, there is no server.</p>
+
+<p>So who's doing the simulating? Well, each client simulates the effects of its own actions (e.g. its own tank shots) as well as the effects of shots fired by pillboxes <em>towards its own tank</em>.</p>
+
+<p>So what even is a replay? A Bolo replay us just a log of incoming and outgoing network packets.</p>
+
+<p>This causes problems for us. Firstly, packets might be generated late and so the event timings might not match the natural cadence of the simulation. Secondly, many events contained in the packets require a perfect understanding of Bolo's physics to know what effects they were supposed to have on the world. And thirdly, in order to save bandwidth, the information we get is the bare minimum needed to update the world.</p>
+
+<h2>Interpolation</h2>
+
+<p>The logged network packets contain information about shell positions, but no identifying information about what shell at time T is the same shell at time T+1. When displaying network shots in-game, Bolo didn't try to interpolate them or join up their paths, just displaying their last known position. Can we do better? Can we turn the thing on the left into the thing on the right?</p>
+
+<figure class="wide">
+	<img src="shells_logged_vs_interpolated.gif" width="966" height="384" alt="The same ten seconds of a pillbox fight drawn twice, side by side: on the left every shell sits at its last logged position and jumps when the next packet arrives, on the right the shells fly smoothly between packets.">
+	<figcaption>Left: a large fight, with shells drawn where the log puts them. Right: the magic of interpolation.</figcaption>
+</figure>
+
+<p>Well, can I do this? No, I cannot do this. It's like trying to take a bunch of primary radar returns and convert them into coherent objects, except instead of a couple of planes there are dozens of shells flying around, often overlapping. This is above my paygrade. Claude, however, could do it. And oh boy, were the required systems complicated! According to Claude's own description:</p>
+
+<blockquote><p>The shell interpolator is a forensic reconstruction engine for anonymous projectiles: a quantisation-aware state estimator driven by a bit-exact simulator of Bolo's integer shell physics, reverse-engineered from empirical data; a 256-bradian discrete-trajectory hypothesis tracker that collapses to exact orbits wherever the origin is pinned; a byte-exact stale-restatement linker; a margin-gated mutual-best identity matcher; a same-origin lockstep roster arbiter; a sender-clock reader that dates each record pair off the sender's own shells &mdash; the tank's common advance, or a pill's passed election &mdash; with a terminal's nearest explainer the one doubtful voter, and lends the composed clock to the joins and to the drawing of late records; a conservative chain stitcher; a min-cost maximum-flow resolver for forced residual origins, continuations, and fates; and a constant-velocity smoother with late-stamp head correction, arrival-retimed splashes, and seamless birth-and-fall segments.</p></blockquote>
+
+<p>Good grief! If you want to know more, I suggest you point your AI of choice at <a href="https://github.com/rooklift/ancient_bolo_parser/blob/main/viewer/motion.js">motion.js</a>, the project's main interpolation source code. I certainly can't explain it.</p>
+
+<p>Upon reading this essay, Claude complains that I've made the interpolator sound like magic. But that's certainly how it seems to me. What's the saying about sufficiently advanced something something?</p>
+
+<h2>Shell simulation science</h2>
+
+<p>In order to interpolate better, it would be useful to understand the exact physics of the shell simulation. I had a corpus of around 450 Bolo logs, enough to let Claude do one of his favourite things, Data Science! While the position of a tank is never known precisely due to rounding in the data, pillboxes are placed only at the centre of tiles. Therefore, it's possible to look at shots from pillboxes and determine exactly where the simulation was actually putting those shots. This was done.</p>
+
+<figure>
+	<img class="only-dark" src="pillbox_shell_orbits.svg" width="608" height="608" alt="Every position a pillbox shell can occupy, in all 128 firing directions, drawn to scale around a pillbox at the centre.">
+	<img class="only-light" src="pillbox_shell_orbits_light.svg" width="608" height="608" alt="Every position a pillbox shell can occupy, in all 128 firing directions, drawn to scale around a pillbox at the centre.">
+	<figcaption>Every position a pillbox shell can reach, in 128 directions. Pillbox to scale.</figcaption>
+</figure>
+
+<p>For whatever reason, pillboxes can only fire in 128 directions (not 256 as one might expect). With the data above, Claude was able to <a href="https://github.com/rooklift/ancient_bolo_parser/blob/main/docs/pillbox_shell_algorithm.md">figure out</a> the exact simulation algorithm. As a result of this and other science, the interpolator has a success rate of about 99.8% on real data, i.e. 99.8% of the time, it's able to say which shell is which, when moving forward a frame.</p>
+
+<p>Around this time, we discovered additional complications: shells are sent in lists of up to four at a time, with entries 1-3 being given as offsets from the previous entry. And due to rounding, errors accumulate, i.e. the claimed position of the shell in index 3 could be out by as much as 3 pixels per axis... oh good. Due to this sort of thing, the interpolator became more of a best-effort hypothesis tester, rather than an exact matcher. Progress was measured with constant testing on the real replay corpus, not only for how much shell matching was being done, but also whether that matching made any sense...</p>
+
+<figure>
+	<img src="overtaking_shells.gif" width="480" height="360" alt="A tank firing a stream of shells westward at a pillbox, slowed down; one shell is drawn catching up with and passing the shell ahead of it, which cannot happen in the real game.">
+	<figcaption>Sense: this clip makes none. One shell overtakes the one ahead of it, wat? Shown at 40% speed.</figcaption>
+</figure>
+
+<h2>Tree clearance</h2>
+
+<p>Shell interpolation was maybe 80% of the battle. As an example of the rest of it, consider this: when a tank gets destroyed, its burning wreckage travels a short distance, obliterating trees along the way.</p>
+
+<figure>
+	<img src="tree_clearance.gif" width="480" height="360" alt="A tank is destroyed at the edge of a forest and its burning wreck slides diagonally through the trees, leaving a cleared path behind it.">
+</figure>
+
+<p>Which trees? The replay doesn't tell us, so to display things correctly we have to figure that out. More data science! This was relatively easy - new trees can spring up where no tree exists, and the replays do contain those events, so just generate a list of candidate tree-clearance shapes, and make sure trees only regrow over trees we marked as destroyed. With a corpus of 450 replays, there's enough data to provide the correct shape: a 15 by 15 pixel box.</p>
+
+<h2>Pillbox drops</h2>
+
+<p>As another example: pillboxes can be killed and picked up by tanks, to be rebuilt later. But if the tank dies while carrying them, they will be dropped.</p>
+
+<figure>
+	<img src="pill_dump.gif" width="480" height="360" alt="Two tanks carrying pillboxes are destroyed a second apart; ten dead pillboxes appear in a cluster around the wrecks, and other tanks then drive in and pick them up.">
+	<figcaption>Two tanks die dropping 8 pillboxes. Thankfully, helpful allies arrive to clean up.</figcaption>
+</figure>
+
+<p>In the case above, a whole bunch of pillboxes are dropped. Where? The replay doesn't say. But it does tell us what tanks picked them up, and when. So again: science! Check where the collecting tanks were when they picked these up. The model turned out to be a simple square spiral, blocked by terrain as needed.</p>
+
+<figure>
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 328 328" width="328" height="328" role="img" aria-labelledby="fst"><title id="fst">Pillbox drop order: a clockwise square spiral from the death square</title><defs><marker id="fsa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" class="fig-line" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><mask id="fsg" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="328" height="328" fill="white"/><rect x="156" y="153" width="16" height="22" fill="black" rx="2"/><rect x="156" y="89" width="16" height="22" fill="black" rx="2"/><rect x="220" y="89" width="16" height="22" fill="black" rx="2"/><rect x="220" y="153" width="16" height="22" fill="black" rx="2"/><rect x="220" y="217" width="16" height="22" fill="black" rx="2"/><rect x="156" y="217" width="16" height="22" fill="black" rx="2"/><rect x="92" y="217" width="16" height="22" fill="black" rx="2"/><rect x="92" y="153" width="16" height="22" fill="black" rx="2"/><rect x="92" y="89" width="16" height="22" fill="black" rx="2"/><rect x="156" y="25" width="16" height="22" fill="black" rx="2"/><rect x="216" y="25" width="24" height="22" fill="black" rx="2"/><rect x="280" y="25" width="24" height="22" fill="black" rx="2"/><rect x="280" y="89" width="24" height="22" fill="black" rx="2"/><rect x="280" y="153" width="24" height="22" fill="black" rx="2"/><rect x="280" y="217" width="24" height="22" fill="black" rx="2"/><rect x="280" y="281" width="24" height="22" fill="black" rx="2"/><rect x="216" y="281" width="24" height="22" fill="black" rx="2"/><rect x="152" y="281" width="24" height="22" fill="black" rx="2"/><rect x="88" y="281" width="24" height="22" fill="black" rx="2"/><rect x="24" y="281" width="24" height="22" fill="black" rx="2"/><rect x="24" y="217" width="24" height="22" fill="black" rx="2"/><rect x="24" y="153" width="24" height="22" fill="black" rx="2"/><rect x="24" y="89" width="24" height="22" fill="black" rx="2"/><rect x="24" y="25" width="24" height="22" fill="black" rx="2"/><rect x="88" y="25" width="24" height="22" fill="black" rx="2"/></mask></defs><rect x="132" y="132" width="64" height="64" rx="4" class="fig-n0" stroke-width="0.5"/><rect x="132" y="68" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="196" y="68" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="196" y="132" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="196" y="196" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="132" y="196" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="68" y="196" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="68" y="132" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="68" y="68" width="64" height="64" rx="4" class="fig-n1" stroke-width="0.5"/><rect x="132" y="4" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="196" y="4" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="260" y="4" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="260" y="68" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="260" y="132" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="260" y="196" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="260" y="260" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="196" y="260" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="132" y="260" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="68" y="260" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="4" y="260" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="4" y="196" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="4" y="132" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="4" y="68" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="4" y="4" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><rect x="68" y="4" width="64" height="64" rx="4" class="fig-n2" stroke-width="0.5"/><polyline fill="none" class="fig-line" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" marker-end="url(#fsa)" mask="url(#fsg)" points="164,164 164,100 228,100 228,164 228,228 164,228 100,228 100,164 100,100 164,36 228,36 292,36 292,100 292,164 292,228 292,292 228,292 164,292 100,292 36,292 36,228 36,164 36,100 36,36 100,36"/><text x="164" y="164" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">0</text><text x="164" y="100" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">1</text><text x="228" y="100" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">2</text><text x="228" y="164" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">3</text><text x="228" y="228" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">4</text><text x="164" y="228" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">5</text><text x="100" y="228" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">6</text><text x="100" y="164" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">7</text><text x="100" y="100" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">8</text><text x="164" y="36" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">9</text><text x="228" y="36" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">10</text><text x="292" y="36" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">11</text><text x="292" y="100" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">12</text><text x="292" y="164" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">13</text><text x="292" y="228" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">14</text><text x="292" y="292" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">15</text><text x="228" y="292" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">16</text><text x="164" y="292" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">17</text><text x="100" y="292" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">18</text><text x="36" y="292" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">19</text><text x="36" y="228" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">20</text><text x="36" y="164" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">21</text><text x="36" y="100" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">22</text><text x="36" y="36" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">23</text><text x="100" y="36" text-anchor="middle" dominant-baseline="central" class="fig-text" font-size="14" font-weight="500">24</text></svg>
+	<figcaption>The order in which dropped pillboxes fill the nearby tiles.</figcaption>
+</figure>
+
+<h2>Tracking down bugs</h2>
+
+<p>While working on interpolation, some entity (I forget who) noticed that some recorded <em>this-pillbox-is-shooting</em> events were far away from any shell. After doing, yes, data science on the replay corpus, we figured out that shots just west of due north were being recorded as having come from the wrong pillbox. We actually ended up consulting decompiled assembly for this one, and figured out why: the event packs the pillbox ID and the shot direction into one byte, four bits each. The direction nibble is computed from Bolo's 256 internal directions by adding 8 and dividing by 16, and for the eight headings just west of north (directions 248 to 255) that gives 16, which overflows into and corrupts the pillbox number.</p>
+
+<p>Actually: this led to more data science. When the two halves of the byte were OR'd together, this mechanism would mean only IDs that are even numbers (which would naturally have a zero in the rightmost bit of the ID nibble) would be corrupted. Was this true? We checked, it was.</p>
+
+<h2>Chat redaction</h2>
+
+<p>I wanted to store some of the replays in the repo, as examples and for testing purposes. But there were certain privacy issues. Solution: have Claude rewrite the chat history! Given the constraint that the messages should remain exactly the same length, Claude produced (imo) some of his best fictional work.</p>
+
+<div class="chat">
+	<div class="line"><span class="t">3:43.5</span><span class="n p0">Alistair</span><span class="m">i am floating up. gravity has ended lads</span></div>
+	<div class="line"><span class="t">7:59.8</span><span class="n p0">Alistair</span><span class="m">this is not fun</span></div>
+	<div class="line"><span class="t">8:04.5</span><span class="n p0">Alistair</span><span class="m">help me down!</span></div>
+	<div class="line"><span class="t">8:08.3</span><span class="n p0">Alistair</span><span class="m">pls guys</span></div>
+	<div class="line"><span class="t">12:06.3</span><span class="n p1">Jarvis</span><span class="m">lol</span></div>
+	<div class="line"><span class="t">13:34.8</span><span class="n p1">Jarvis</span><span class="m">gravity is fine?</span></div>
+	<div class="line"><span class="t">13:39.1</span><span class="n p2">Tony</span><span class="m">hi</span></div>
+	<div class="line"><span class="t">13:52.7</span><span class="n p1">Jarvis</span><span class="m">i am fine</span></div>
+	<div class="line"><span class="t">13:54.7</span><span class="n p1">Jarvis</span><span class="m">feet down.</span></div>
+	<div class="line"><span class="t">16:07.0</span><span class="n p3">Bob</span><span class="m">hm</span></div>
+	<div class="line"><span class="t">16:25.8</span><span class="n p0">Alistair</span><span class="m">not for me</span></div>
+	<div class="line"><span class="t">20:38.5</span><span class="n p0">Alistair</span><span class="m">i checked my mail and uh.</span></div>
+	<div class="line"><span class="t">21:39.4</span><span class="n p0">Alistair</span><span class="m">so..</span></div>
+	<div class="line"><span class="t">21:43.6</span><span class="n p2">Tony</span><span class="m">and?</span></div>
+	<div class="line"><span class="t">23:53.7</span><span class="n p3">Bob</span><span class="m">what has mail to do w it</span></div>
+	<div class="line"><span class="t">26:00.7</span><span class="n p0">Alistair</span><span class="m">ok</span></div>
+	<div class="line"><span class="t">26:53.2</span><span class="n p3">Bob</span><span class="m">??</span></div>
+	<div class="line"><span class="t">33:03.9</span><span class="n p1">Jarvis</span><span class="m">spit it out.</span></div>
+	<div class="line"><span class="t">35:13.5</span><span class="n p0">Alistair</span><span class="m">gravity is subscription.</span></div>
+	<div class="line"><span class="t">37:29.3</span><span class="n p1">Jarvis</span><span class="m">what do you mean gravity is a subscription, who is billing</span></div>
+	<div class="line"><span class="t">37:42.9</span><span class="n p2">Tony</span><span class="m">yeah who bills??</span></div>
+	<div class="line"><span class="t">37:50.9</span><span class="n p2">Tony</span><span class="m">and why did YOU stop paying?</span></div>
+	<div class="line"><span class="t">37:57.8</span><span class="n p1">Jarvis</span><span class="m">?</span></div>
+	<div class="line"><span class="t">49:58.3</span><span class="n p1">Jarvis</span><span class="m">wait have we all been paying</span></div>
+	<div class="line"><span class="t">53:30.5</span><span class="n p0">Alistair</span><span class="m">yes.</span></div>
+	<div class="line"><span class="t">53:35.1</span><span class="n p0">Alistair</span><span class="m">i think</span></div>
+	<div class="line"><span class="t">53:42.3</span><span class="n p0">Alistair</span><span class="m">the</span></div>
+	<div class="line"><span class="t">54:09.5</span><span class="n p2">Tony</span><span class="m">the what. the WHAT. type!!</span></div>
+	<div class="line"><span class="t">55:00.2</span><span class="n p0">Alistair</span><span class="m">the ground. we pay the ground. in gold. every year. it said</span></div>
+	<div class="line"><span class="t">56:48.2</span><span class="n p0">Alistair</span><span class="m">:</span></div>
+	<div class="line"><span class="t">56:50.9</span><span class="n p1">Jarvis</span><span class="m">it said what???</span></div>
+	<div class="line"><span class="t">57:05.9</span><span class="n p1">Jarvis</span><span class="m">dude</span></div>
+	<div class="line"><span class="t">57:09.8</span><span class="n p2">Tony</span><span class="m">hurry!</span></div>
+	<div class="line"><span class="t">57:20.5</span><span class="n p1">Jarvis</span><span class="m">he is going to float into the sun.</span></div>
+	<div class="line"><span class="t">60:09.4</span><span class="n p1">Jarvis</span><span class="m">we do not have all day</span></div>
+	<div class="line"><span class="t">60:47.1</span><span class="n p0">Alistair</span><span class="m">ok:</span></div>
+	<div class="line"><span class="t">60:50.3</span><span class="n p1">Jarvis</span><span class="m">GO ON</span></div>
+	<div class="line"><span class="t">62:10.0</span><span class="n p0">Alistair</span><span class="m">it said: bye bye :)</span></div>
+</div>
+
+<h2>What did AI bring?</h2>
+
+<p>Claude reckons that, to get a freelancer to make a crude replay viewer, before the AI era, would have cost maybe $5,000 to $20,000. To get it working at the level our viewer does, with all the data science to support the interpolation and other things, might require a crack team of experts at a cost of $500,000 or so! Is Claude overselling the value of his work? Possibly, I dunno. But in any case, it actually cost $200 and took less than a month in my spare time (a version without interpolation was working within an hour, everything after that was refinement) for:</p>
+
+<ul class="stats">
+	<li><span class="num">~10,000</span><span class="lab">lines of viewer code, with 3,000 lines of comments</span></li>
+	<li><span class="num">~14,000</span><span class="lab">lines of tool code for data science experiments</span></li>
+	<li><span class="num">~4,000</span><span class="lab">lines of testing code</span></li>
+</ul>
+
+<p>The code, although it was certainly beyond me, was not Claude and Sol's only contribution. They also conducted analysis of 450 or so genuine replays, iterating and testing our code against real data. Like so many coders before me, I had become a manager. Thankfully the staff were better at this stuff than me.</p>
+
+<footer>
+	<p>P.S. The replay viewer described here lives at <a href="https://rooklift.github.io/ancient_bolo_parser/">rooklift.github.io/ancient_bolo_parser</a>.</p>
+	<p>P.P.S. WinBolo is having a renaissance right now and just got a <a href="https://store.steampowered.com/app/4672140/WinBolo/">Steam release</a>.</p>
+</footer>
+
+</main>
+<script>
+	(function () {
+		let root = document.documentElement;
+		let button = document.getElementById("themeToggle");
+		let media = window.matchMedia("(prefers-color-scheme: dark)");
+		function current() {
+			return root.dataset.theme || (media.matches ? "dark" : "light");
+		}
+		function render() {
+			let dark = current() === "dark";
+			// The button names the mode it will switch to.
+			button.querySelector(".glyph").textContent = dark ? "\u2600" : "\u263E";
+			button.querySelector(".label").textContent = dark ? "Light mode" : "Dark mode";
+			button.setAttribute("aria-pressed", String(dark));
+		}
+		button.addEventListener("click", function () {
+			let next = current() === "dark" ? "light" : "dark";
+			root.dataset.theme = next;
+			try { localStorage.setItem("theme", next); } catch (e) {}
+			render();
+		});
+		media.addEventListener("change", render);
+		render();
+	})();
+</script>
+</body>
+</html>

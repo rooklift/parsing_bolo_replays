@@ -438,7 +438,7 @@
 
 <h2>Tracking down bugs</h2>
 
-<p>While working on interpolation, some entity (I forget who) noticed that some recorded <em>this-pillbox-is-shooting</em> events were far away from any shell. After doing, yes, data science on the replay corpus, we figured out that shots just west of due north were being recorded as having come from the wrong pillbox. We actually ended up consulting decompiled assembly for this one and found out why: the event packs the pillbox ID and the shot direction into one byte, four bits each. The direction nibble is computed from Bolo's 256 internal directions by adding 8 and dividing by 16, and for the eight headings just west of north (directions 248 to 255) that gives 16, which overflows into and corrupts the pillbox number.</p>
+<p>While working on interpolation, some entity (I forget who) noticed that some recorded <em>this-pillbox-is-shooting</em> events were far away from any shell. After doing, yes, data science on the replay corpus, we figured out that shots just west of due north were being recorded as having come from the wrong pillbox. We actually ended up consulting disassembled code for this one and found out why: the event packs the pillbox ID and the shot direction into one byte, four bits each. The direction nibble is computed from Bolo's 256 internal directions by adding 8 and dividing by 16, and for the eight headings just west of north (directions 248 to 255) that gives 16, which overflows into and corrupts the pillbox number.</p>
 
 <pre class="asm">713E: MOVEQ   #0,D6        <span class="c">; clear D6</span>
 7140: MOVE.B  4(A2),D6     <span class="c">; load a byte (zero-extended, thanks to the MOVEQ)</span>

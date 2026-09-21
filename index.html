@@ -445,7 +445,7 @@
 7144: ADDQ    #8,D6        <span class="c">; add 8</span>
 7146: ASR     #4,D6        <span class="c">; arithmetic shift right by 4 = divide by 16</span></pre>
 
-<p>The offending code is shown above. We almost never looked at disassembler output because (A) it felt kind of dirty, and (B) Claude's "cyber" classifiers kick in if you feed it too much of this stuff. But we did on this occasion, and it led to more data science. When the two halves of the byte were OR'd together, this mechanism would mean only IDs that are even numbers (which would naturally have a zero in the rightmost bit of the ID nibble) would be corrupted. Was this true? We checked, it was.</p>
+<p>We almost never looked at disassembler output because (A) it felt kind of dirty, and (B) Claude's "cyber" classifiers kick in if you feed it too much of this stuff. But we did on this occasion, and it led to more data science. When the two halves of the byte were OR'd together, this mechanism would mean only IDs that are even numbers (which would naturally have a zero in the rightmost bit of the ID nibble) would be corrupted. Was this true? We checked, it was.</p>
 
 <h2>Chat redaction</h2>
 
